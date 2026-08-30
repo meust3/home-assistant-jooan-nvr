@@ -1,0 +1,50 @@
+name: Bug report
+description: Report reproducible integration behavior using redacted diagnostics.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Attach Home Assistant diagnostics rather than raw debug dumps. Redact passwords,
+        public addresses, NVR UID/HWID, camera identifiers, Authorization headers,
+        camera footage, and exact household location.
+  - type: input
+    id: version
+    attributes:
+      label: Integration version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: home_assistant
+    attributes:
+      label: Home Assistant version and installation type
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Recorder model
+      description: Do not include serial numbers, UID/HWID, MAC addresses, or cloud IDs.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Include expected behavior, actual behavior, and reproducible steps.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted Home Assistant diagnostics
+      description: Drag in the integration diagnostics file after reviewing its contents.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I reviewed every attachment and removed credentials, identifiers, private locations, captures, and footage.
+          required: true

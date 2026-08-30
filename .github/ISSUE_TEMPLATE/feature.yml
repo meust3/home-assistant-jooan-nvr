@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest a focused, evidence-based enhancement.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include passwords, public addresses, NVR UID/HWID, camera identifiers,
+        Authorization headers, camera footage, exact household location, firmware, or
+        copied vendor code.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: local_evidence
+    attributes:
+      label: Local protocol evidence, if relevant
+      description: Describe redacted observations; do not attach raw captures or footage.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This request preserves local-only operation and does not assume an unproven capability.
+          required: true

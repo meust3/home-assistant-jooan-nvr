@@ -1,0 +1,49 @@
+name: Device compatibility report
+description: Report results from another recorder using safe, redacted evidence.
+title: "[Compatibility]: "
+labels: [compatibility]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never upload firmware, vendor app code, packet captures, credentials, public
+        addresses, NVR UID/HWID, camera identifiers, Authorization headers, camera
+        footage, or exact household location. Prefer Home Assistant diagnostics.
+  - type: input
+    id: model
+    attributes:
+      label: Recorder manufacturer and model
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware version
+      description: A version string is useful; do not include a serial number or device ID.
+  - type: input
+    id: channels
+    attributes:
+      label: Configured and online channel counts
+      placeholder: 8 configured, 2 online
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Setup and stream result
+      description: State which quality and codec worked without including any camera image.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted Home Assistant diagnostics
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy and provenance check
+      options:
+        - label: I reviewed all content and removed sensitive identifiers, network data, credentials, and footage.
+          required: true
+        - label: I have not attached proprietary firmware, vendor code, or decompiled binaries.
+          required: true
