@@ -45,6 +45,9 @@ async def test_camera_unavailable_and_recovers(hass: HomeAssistant) -> None:
     camera = JooanCamera(runtime, channel)
 
     assert camera.device_info["via_device"] == (DOMAIN, DEVICE_ID)
+    assert camera.use_stream_for_stills is True
+    assert camera.stream is None
+    assert camera.access_tokens
     assert camera.available is False
     assert await camera.stream_source() is None
 
@@ -55,6 +58,22 @@ async def test_camera_unavailable_and_recovers(hass: HomeAssistant) -> None:
     assert camera.available is True
     assert camera.is_recording is True
     assert await camera.stream_source() == "tcp://127.0.0.1:12345"
+
+
+def test_camera_availability_includes_supported_stream_health(hass: HomeAssistant) -> None:
+    runtime, channel, _ = _runtime(hass)
+    camera = JooanCamera(runtime, channel)
+    runtime.coordinator.async_set_updated_data(
+        {1: ChannelStatus(1, True, True, 39, "Connect success")}
+    )
+
+    stream = MagicMock()
+    stream.available = False
+    camera.stream = stream
+    assert camera.available is False
+
+    stream.available = True
+    assert camera.available is True
 
 
 @pytest.mark.asyncio

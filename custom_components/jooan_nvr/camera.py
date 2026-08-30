@@ -29,17 +29,27 @@ class JooanCamera(JooanChannelEntity, Camera):
 
     _attr_name = None
     _attr_supported_features = CameraEntityFeature.STREAM
-    _attr_use_stream_for_stills = True
 
     def __init__(self, runtime: JooanRuntimeData, channel: Channel) -> None:
-        super().__init__(runtime, channel)
+        # CoordinatorEntity and Camera both derive from Entity, but the
+        # CoordinatorEntity initializer does not continue through this class's
+        # MRO. Initialize both Home Assistant bases explicitly, as core camera
+        # integrations with the same inheritance shape do.
+        JooanChannelEntity.__init__(self, runtime, channel)
+        Camera.__init__(self)
         self._attr_unique_id = f"{runtime.identity.device_id}_channel_{channel.channel_id}_camera"
 
     @property
+    def use_stream_for_stills(self) -> bool:
+        """Tell Home Assistant to generate snapshots from its shared stream."""
+        return True
+
+    @property
     def available(self) -> bool:
-        """Report whether both the NVR and camera channel are available."""
+        """Report recorder, channel, and Home Assistant stream health."""
         status = self.channel_status
-        return super().available and status is not None and status.online
+        stream_available = self.stream is None or self.stream.available
+        return super().available and status is not None and status.online and stream_available
 
     @property
     def is_recording(self) -> bool:

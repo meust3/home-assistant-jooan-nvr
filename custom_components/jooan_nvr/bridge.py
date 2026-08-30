@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import io
 import logging
+import re
 from collections.abc import Callable
 from contextlib import suppress
 from fractions import Fraction
@@ -18,6 +19,26 @@ _LOGGER = logging.getLogger(__name__)
 
 MPEG_TS_TIME_BASE = Fraction(1, 90_000)
 WRITER_CLOSE_TIMEOUT = 1.0
+ERROR_MESSAGE_LIMIT = 300
+
+_SENSITIVE_FIELD = re.compile(
+    r"(?i)\b(?:authorization|basic|password|passwd|username|user|uid|hwid|auth[_ -]?payload)"
+    r"\s*[:=]\s*[^\s,;)}]+"
+)
+_BASIC_AUTH = re.compile(r"(?i)\b(?:authorization\s*[:=]\s*)?basic\s+[A-Za-z0-9+/=._~-]+")
+_URL_CREDENTIALS = re.compile(r"(?i)(?:https?|wss?)://[^/@\s]+@")
+
+
+def _sanitise_exception_message(error: BaseException, secrets: tuple[str, ...]) -> str:
+    """Return a bounded exception message with known credentials removed."""
+    message = str(error).replace("\r", " ").replace("\n", " ")
+    for secret in secrets:
+        if secret:
+            message = re.sub(re.escape(secret), "<redacted>", message, flags=re.IGNORECASE)
+    message = _URL_CREDENTIALS.sub("<redacted-url-credentials>@", message)
+    message = _BASIC_AUTH.sub("<redacted-basic-authorization>", message)
+    message = _SENSITIVE_FIELD.sub("<redacted>", message)
+    return message[:ERROR_MESSAGE_LIMIT] or "no details"
 
 
 class _MpegTsMuxer:
@@ -97,6 +118,28 @@ class StreamBridge:
         self._stopping = False
 
     @property
+    def _stream_name(self) -> str:
+        return {0: "main", 1: "sub"}.get(self._stream_id, "unknown")
+
+    def _debug(self, stage: str, error: BaseException | None = None) -> None:
+        """Log a safe, channel-scoped lifecycle event at DEBUG level."""
+        context = f"Channel {self._channel + 1} stream {self._stream_id} ({self._stream_name})"
+        if error is None:
+            _LOGGER.debug("%s: %s", context, stage)
+            return
+        message = _sanitise_exception_message(
+            error,
+            (self._username, self._password),
+        )
+        _LOGGER.debug(
+            "%s: failure at %s (%s: %s)",
+            context,
+            stage,
+            type(error).__name__,
+            message,
+        )
+
+    @property
     def source_url(self) -> str:
         """Return the local source URL after startup."""
         if self._server is None or not self._server.sockets:
@@ -109,19 +152,28 @@ class StreamBridge:
         if self._server is not None:
             return
         self._stopping = False
-        self._server = await asyncio.start_server(self._handle_client, "127.0.0.1", 0)
+        try:
+            self._server = await asyncio.start_server(self._handle_client, "127.0.0.1", 0)
+        except OSError as err:
+            self._debug("loopback listener starting", err)
+            raise
+        self._debug("loopback listener started")
 
     async def _handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
-        del reader
         task = asyncio.current_task()
         if task:
             self._tasks.add(task)
         muxer: _MpegTsMuxer | None = None
+        stage = "Home Assistant connected to loopback listener"
+        first_video_frame = False
+        first_keyframe = False
+        first_bytes = False
         try:
             if self._stopping:
                 return
+            self._debug(stage)
             async with (
                 self._slots,
                 Kp2pLiveStream(
@@ -132,29 +184,52 @@ class StreamBridge:
                     self._password,
                     self._channel,
                     self._stream_id,
+                    stage_callback=self._debug,
                 ) as stream,
             ):
+                stage = "waiting for first video frame"
                 async for frame in stream.async_frames():
+                    if not first_video_frame:
+                        first_video_frame = True
+                        self._debug("first video frame received")
                     if muxer is None:
                         if frame.frame_type != 1:
+                            stage = "waiting for first keyframe"
                             continue
-                        muxer = _MpegTsMuxer(frame)
-                    writer.write(muxer.mux(frame))
+                        first_keyframe = True
+                        self._debug("first keyframe received")
+                        stage = "PyAV input parser"
+                        muxer = await asyncio.to_thread(_MpegTsMuxer, frame)
+                        self._debug("muxer created")
+                    stage = "MPEG-TS mux"
+                    payload = await asyncio.to_thread(muxer.mux, frame)
+                    writer.write(payload)
+                    stage = "writing MPEG-TS to Home Assistant"
                     await asyncio.wait_for(writer.drain(), timeout=5)
+                    if payload and not first_bytes:
+                        first_bytes = True
+                        self._debug("first MPEG-TS bytes written")
+                    if reader.at_eof():
+                        self._debug("Home Assistant consumer disconnected")
+                        break
+                if not first_video_frame:
+                    raise Kp2pError("stream ended before a video frame", stage="no video frames")
+                if not first_keyframe:
+                    raise Kp2pError("stream ended before a keyframe", stage="no keyframe")
         except (ConnectionError, TimeoutError, Kp2pError, OSError, av.FFmpegError) as err:
-            _LOGGER.debug(
-                "Channel %s stream bridge closed (%s)",
-                self._channel + 1,
-                type(err).__name__,
-            )
+            failure_stage = err.stage if isinstance(err, Kp2pError) and err.stage else stage
+            if isinstance(err, (BrokenPipeError, ConnectionResetError)):
+                failure_stage = "Home Assistant consumer disconnected"
+            self._debug(failure_stage, err)
         finally:
             if muxer:
-                muxer.close()
+                await asyncio.to_thread(muxer.close)
             writer.close()
             with suppress(OSError, TimeoutError):
                 await asyncio.wait_for(writer.wait_closed(), WRITER_CLOSE_TIMEOUT)
             if task:
                 self._tasks.discard(task)
+            self._debug("loopback client stopped")
 
     async def async_stop(self) -> None:
         """Close the listener and any active on-demand streams."""
@@ -173,6 +248,7 @@ class StreamBridge:
             await asyncio.gather(*tasks, return_exceptions=True)
         if server:
             await server.wait_closed()
+        self._debug("bridge stopped")
 
 
 class StreamBridgeManager:

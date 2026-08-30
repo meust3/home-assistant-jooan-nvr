@@ -2,17 +2,24 @@ from __future__ import annotations
 
 import asyncio
 import struct
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiohttp import WSMsgType
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from custom_components.jooan_nvr.kp2p import (
+    API_AUTH_RSP,
+    API_LIVE_RSP,
     API_MAGIC,
+    ARQ_OPEN_RESPONSE,
     AUTH_FIELD_CIPHER_KEY,
     FRAME_MAGIC,
+    IOT_DATA,
     IOT_DATA_PRIOR,
+    IOT_OPEN_RES,
+    LIVE_START,
+    Kp2pAuthenticationError,
     Kp2pError,
     Kp2pLiveStream,
     _api_packet,
@@ -36,6 +43,12 @@ class _WebSocket:
 
     async def receive(self):  # type: ignore[no-untyped-def]
         return _Message(next(self.messages))
+
+    async def send_bytes(self, _data: bytes) -> None:
+        return
+
+    async def close(self) -> None:
+        return
 
 
 class _HangingCloseWebSocket:
@@ -114,3 +127,72 @@ async def test_websocket_error_without_exception_is_protocol_error() -> None:
 
     with pytest.raises(Kp2pError, match="WebSocket error"):
         await session.receive_iot()
+
+
+@pytest.mark.asyncio
+async def test_authentication_failure_records_safe_lifecycle_stage() -> None:
+    messages = [
+        ARQ_OPEN_RESPONSE,
+        _iot_packet(IOT_OPEN_RES, 1, b""),
+        _iot_packet(IOT_DATA, 1, _api_packet(API_AUTH_RSP, 1, b"", result=-1)),
+    ]
+    websocket = _WebSocket(messages)
+    http_session = MagicMock()
+    http_session.ws_connect = AsyncMock(return_value=websocket)
+    stages: list[str] = []
+    stream = Kp2pLiveStream(
+        http_session,
+        "192.168.77.10",
+        10000,
+        "admin",
+        "",
+        0,
+        1,
+        stage_callback=stages.append,
+    )
+
+    with pytest.raises(Kp2pAuthenticationError) as raised:
+        await stream.__aenter__()
+
+    assert raised.value.stage == "KP2P authentication"
+    assert stages == [
+        "KP2P websocket connecting",
+        "KP2P websocket connected",
+        "ARQ handshake complete",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_live_request_rejection_records_lifecycle_stage() -> None:
+    live_payload = struct.pack("<III", 0, 1, LIVE_START)
+    messages = [
+        ARQ_OPEN_RESPONSE,
+        _iot_packet(IOT_OPEN_RES, 1, b""),
+        _iot_packet(IOT_DATA, 1, _api_packet(API_AUTH_RSP, 1, b"")),
+        _iot_packet(
+            IOT_DATA,
+            1,
+            _api_packet(API_LIVE_RSP, 2, live_payload, result=-2),
+        ),
+    ]
+    websocket = _WebSocket(messages)
+    http_session = MagicMock()
+    http_session.ws_connect = AsyncMock(return_value=websocket)
+    stages: list[str] = []
+    stream = Kp2pLiveStream(
+        http_session,
+        "192.168.77.10",
+        10000,
+        "admin",
+        "",
+        0,
+        1,
+        stage_callback=stages.append,
+    )
+
+    with pytest.raises(Kp2pError) as raised:
+        await stream.__aenter__()
+
+    assert raised.value.stage == "live-stream request"
+    assert stages[-1] == "KP2P authentication complete"
+    assert "live-stream request accepted" not in stages

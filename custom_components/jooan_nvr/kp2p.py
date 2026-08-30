@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import secrets
 import struct
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
 from types import TracebackType
@@ -40,6 +41,10 @@ CLOSE_TIMEOUT = 1.0
 
 class Kp2pError(Exception):
     """Base local KP2P error."""
+
+    def __init__(self, message: str, *, stage: str | None = None) -> None:
+        super().__init__(message)
+        self.stage = stage
 
 
 class Kp2pAuthenticationError(Kp2pError):
@@ -256,6 +261,7 @@ class Kp2pLiveStream:
         stream_id: int,
         *,
         timeout: float = 6.0,
+        stage_callback: Callable[[str], None] | None = None,
     ) -> None:
         self._http_session = session
         self._endpoint = f"ws://{host}:{port}"
@@ -264,13 +270,21 @@ class Kp2pLiveStream:
         self._channel = channel
         self._stream_id = stream_id
         self._timeout = timeout
+        self._stage_callback = stage_callback
         self._websocket: ClientWebSocketResponse | None = None
         self._session: _Session | None = None
         self._keepalive_task: asyncio.Task[None] | None = None
 
+    def _stage(self, stage: str) -> None:
+        """Report a credential-free lifecycle stage to the bridge."""
+        if self._stage_callback:
+            self._stage_callback(stage)
+
     async def __aenter__(self) -> Self:
         sid = secrets.randbelow(9999) + 1
+        stage = "KP2P websocket connecting"
         try:
+            self._stage(stage)
             websocket = await self._http_session.ws_connect(
                 self._endpoint,
                 autoping=False,
@@ -279,6 +293,8 @@ class Kp2pLiveStream:
                 timeout=self._timeout,
             )
             self._websocket = websocket
+            self._stage("KP2P websocket connected")
+            stage = "ARQ handshake"
             await websocket.send_bytes(ARQ_OPEN + struct.pack("<I", sid))
             response = await asyncio.wait_for(websocket.receive(), self._timeout)
             if response.type is not WSMsgType.BINARY or bytes(response.data) != ARQ_OPEN_RESPONSE:
@@ -293,15 +309,25 @@ class Kp2pLiveStream:
                 if error_code:
                     raise Kp2pError(f"IOT open failed ({error_code})")
                 break
+            self._stage("ARQ handshake complete")
+            stage = "KP2P authentication"
             await protocol.authenticate(self._username, self._password)
+            self._stage("KP2P authentication complete")
+            stage = "live-stream request"
             await protocol.open_stream(self._channel, self._stream_id)
+            self._stage("live-stream request accepted")
             self._keepalive_task = asyncio.create_task(
                 self._keepalive(), name=f"jooan-kp2p-{self._channel}"
             )
             return self
         except (TimeoutError, ClientError, OSError) as err:
             await self.async_close()
-            raise Kp2pError("could not open the local KP2P stream") from err
+            raise Kp2pError("could not open the local KP2P stream", stage=stage) from err
+        except Kp2pError as err:
+            await self.async_close()
+            if err.stage is None:
+                err.stage = stage
+            raise
         except Exception:
             await self.async_close()
             raise
