@@ -9,8 +9,8 @@ from aiohttp import WSMsgType
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from custom_components.jooan_nvr.kp2p import (
-    AUTH_FIELD_CIPHER_KEY,
     API_MAGIC,
+    AUTH_FIELD_CIPHER_KEY,
     FRAME_MAGIC,
     IOT_DATA_PRIOR,
     Kp2pError,

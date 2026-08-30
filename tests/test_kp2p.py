@@ -6,8 +6,8 @@ import struct
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from jooan_discovery.kp2p import (
-    AUTH_FIELD_CIPHER_KEY,
     API_MAGIC,
+    AUTH_FIELD_CIPHER_KEY,
     FRAME_MAGIC,
     IOT_DATA_PRIOR,
     IOT_MAGIC,
