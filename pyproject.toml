@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jooan-nvr-discovery"
-version = "0.1.0"
+version = "0.1.1"
 description = "Conservative local-network discovery and protocol investigation for JOOAN/EseeCloud NVRs"
 readme = "README.md"
 requires-python = ">=3.14.2"

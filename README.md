@@ -177,7 +177,7 @@ python -m ruff format --check .
 python -m compileall -q custom_components jooan_discovery tests scripts
 python scripts/validate_isolation.py
 python scripts/validate_hacs.py
-python scripts/build_release.py --version 0.1.0
+python scripts/build_release.py --version 0.1.1
 ```
 
 The isolation check copies only `custom_components/jooan_nvr`, starts Python in

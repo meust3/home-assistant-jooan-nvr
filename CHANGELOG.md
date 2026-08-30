@@ -3,6 +3,30 @@
 All notable changes use [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.1]
+
+### Fixed
+
+- Use Home Assistant 2026.8's `use_stream_for_stills` property so entity-picture
+  requests use the shared stream instead of the unimplemented `camera_image()` path.
+- Initialize both coordinator and camera bases, restoring Home Assistant's stream,
+  access-token, cache, and stream-lock state for JOOAN camera entities.
+- Combine recorder/channel connectivity with Home Assistant stream health and retain
+  the supported automatic stream retry path after a transient failure.
+- Add sanitized DEBUG lifecycle diagnostics for loopback, KP2P, ARQ, authentication,
+  live-request, video/keyframe, PyAV, MPEG-TS, disconnect, and stop stages.
+- Move synchronous PyAV parsing and muxing work off Home Assistant's event loop.
+- Normalize common `http://host/` input and return `invalid_host` for malformed host
+  values instead of an unhandled config-flow error.
+
+### Validation
+
+- Added Home Assistant camera-proxy and HLS regression coverage using the real
+  2026.8 stream/PyAV path over `tcp://127.0.0.1:<port>`.
+- Added still generation, multiple frontend openings, live-card, stream failure and
+  recovery, H.265 decode, blank-password, host, lifecycle, and log-redaction tests.
+- Real Home Assistant playback remains to be retested after installing this release.
+
 ## [0.1.0]
 
 ### Added
@@ -23,4 +47,5 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - H.265 playback depends on the client; the integration does not transcode.
 - The NVR remains responsible for its wireless cameras, HDD, and recording.
 
+[0.1.1]: https://github.com/meust3/home-assistant-jooan-nvr/releases/tag/v0.1.1
 [0.1.0]: https://github.com/meust3/home-assistant-jooan-nvr/releases/tag/v0.1.0

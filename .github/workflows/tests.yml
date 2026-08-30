@@ -86,4 +86,4 @@ jobs:
       - name: Validate HACS layout
         run: python scripts/validate_hacs.py
       - name: Build manual-install archive
-        run: python scripts/build_release.py --version 0.1.0
+        run: python scripts/build_release.py --version 0.1.1

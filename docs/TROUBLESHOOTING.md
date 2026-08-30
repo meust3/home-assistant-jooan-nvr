@@ -45,5 +45,21 @@ Download diagnostics from the integration entry. They contain model, firmware,
 channel state, profile, quality, and known capability limitations with sensitive
 fields redacted. Review even redacted diagnostics before sharing them.
 
+For a stream failure that needs more detail, temporarily enable the integration's
+sanitized lifecycle log and reproduce one camera opening:
+
+```yaml
+logger:
+  logs:
+    custom_components.jooan_nvr: debug
+```
+
+Restart Home Assistant after adding the setting. The DEBUG log identifies the
+channel, main/sub stream ID, loopback listener, KP2P/ARQ/authentication, first
+video/keyframe, PyAV/MPEG-TS, consumer-disconnect, and timeout stage. It does not log
+the configured username/password, Authorization value, UID/HWID, auth payload, or
+packet contents. Remove the DEBUG setting after collecting the short reproduction;
+normal INFO logging intentionally stays quiet.
+
 Do not post raw debug dumps, packet captures, Authorization headers, UID/HWID values,
 MAC addresses, public addresses, credentials, household location, or camera footage.
