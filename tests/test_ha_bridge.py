@@ -274,7 +274,7 @@ def test_failure_diagnostics_redact_every_sensitive_field(
     basic_value = "YWRtaW46Y2FtZXJhLXBhc3N3b3JkLXZhbHVl"
     uid = "0123456789abcdef01234567"
     hwid = "fedcba9876543210fedcba98"
-    auth_payload = "aabbccddeeff00112233445566778899"
+    auth_payload = "synthetic-auth-payload"
     bridge = _bridge(password=password)
     error = Kp2pError(
         "username=admin "

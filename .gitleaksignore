@@ -1,0 +1,2 @@
+# Synthetic auth-payload value used only to prove DEBUG log redaction.
+ed39062630dd9089a58540901903a01c7f65759c:tests/test_ha_bridge.py:generic-api-key:277
