@@ -1,0 +1,54 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Local diagnostics, captures, and camera media
+artifacts/
+captures/
+logs/
+debug/
+*.log
+*.pcap
+*.pcapng
+*.har
+*.ts
+*.m2ts
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.h264
+*.h265
+*.hevc
+
+# Local credentials and machine-specific configuration
+.env
+.env.*
+credentials
+credentials.*
+*.credentials
+*.pem
+*.key
+secrets.yaml
+
+# Home Assistant runtime data
+config/
+.storage/
+home-assistant_v2.db*
+*.db-shm
+*.db-wal
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+.DS_Store
+Thumbs.db

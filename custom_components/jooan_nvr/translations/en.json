@@ -1,0 +1,87 @@
+{
+  "title": "JOOAN NVR",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to a JOOAN NVR",
+        "description": "Enter the recorder's local address and credentials.",
+        "data": {
+          "host": "Host or IP address",
+          "http_port": "HTTP port",
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "discovery_credentials": {
+        "title": "Discovered JOOAN NVR",
+        "description": "A possible recorder was discovered at {host}. Enter its local credentials to verify it.",
+        "data": {
+          "host": "Host or IP address",
+          "http_port": "HTTP port",
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "detected": {
+        "title": "Confirm detected recorder",
+        "description": "Detected model {model} with {channel_count} configured channels. Currently online: {online_channels}."
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate JOOAN NVR",
+        "description": "The recorder rejected the saved local credentials.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure JOOAN NVR",
+        "description": "Update the recorder address or local credentials.",
+        "data": {
+          "host": "Host or IP address",
+          "http_port": "HTTP port",
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to the recorder.",
+      "invalid_auth": "The local username or password is invalid.",
+      "not_jooan_nvr": "The endpoint did not identify as a supported JOOAN recorder.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This recorder is already configured.",
+      "cannot_connect": "The recorder could not be validated.",
+      "reauth_successful": "Reauthentication was successful.",
+      "reconfigure_successful": "The recorder configuration was updated.",
+      "unique_id_mismatch": "The address belongs to a different recorder."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "JOOAN NVR options",
+        "data": {
+          "preferred_stream": "Preferred stream"
+        }
+      }
+    }
+  },
+  "selector": {
+    "preferred_stream": {
+      "options": {
+        "main": "Main / high quality",
+        "sub": "Sub / low bandwidth"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {"name": "Connected"},
+      "recording": {"name": "Recording"}
+    }
+  }
+}
+

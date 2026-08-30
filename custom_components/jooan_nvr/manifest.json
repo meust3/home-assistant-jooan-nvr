@@ -1,0 +1,17 @@
+{
+  "domain": "jooan_nvr",
+  "name": "JOOAN NVR",
+  "codeowners": ["@meust3"],
+  "config_flow": true,
+  "dependencies": ["stream"],
+  "dhcp": [
+    {"macaddress": "9CA3AA*"},
+    {"registered_devices": true}
+  ],
+  "documentation": "https://github.com/meust3/home-assistant-jooan-nvr#readme",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/meust3/home-assistant-jooan-nvr/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
