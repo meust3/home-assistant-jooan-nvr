@@ -1,0 +1,89 @@
+name: Tests and quality
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Home Assistant ${{ matrix.homeassistant }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - homeassistant: "2026.8.0 (minimum)"
+            plugin: "0.13.354"
+          - homeassistant: "2026.8.3 (current stable)"
+            plugin: "0.13.357"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install \
+            -e . \
+            "pytest-homeassistant-custom-component==${{ matrix.plugin }}" \
+            aiodhcpwatcher==1.2.7 \
+            aiodiscover==3.3.2 \
+            av==17.0.1 \
+            cached-ipaddress==1.1.2 \
+            PyTurboJPEG==1.8.3
+      - name: Run tests
+        run: python -m pytest
+
+  quality:
+    name: Ruff, format, and compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Install Ruff
+        run: python -m pip install "ruff>=0.9"
+      - name: Lint
+        run: python -m ruff check .
+      - name: Check formatting
+        run: python -m ruff format --check .
+      - name: Compile Python
+        run: python -m compileall -q custom_components jooan_discovery tests scripts
+
+  package-isolation:
+    name: Clean integration isolation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Install a clean runtime and test environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Validate isolated imports
+        run: python scripts/validate_isolation.py
+      - name: Validate HACS layout
+        run: python scripts/validate_hacs.py
+      - name: Build manual-install archive
+        run: python scripts/build_release.py --version 0.1.0
