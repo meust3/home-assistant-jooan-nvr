@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import re
+from ipaddress import ip_address
 from typing import Any
+from urllib.parse import urlsplit
 
 import voluptuous as vol
 from homeassistant.config_entries import (
@@ -57,6 +59,60 @@ def _normalise_mac(value: str | None) -> str | None:
     return ":".join(raw[index : index + 2] for index in range(0, 12, 2)).lower()
 
 
+def _normalise_connection_data(data: dict[str, Any]) -> dict[str, Any]:
+    """Normalize a host field that may contain a common HTTP URL."""
+    normalized = dict(data)
+    raw_host = str(data.get(CONF_HOST, "")).strip()
+    if not raw_host:
+        raise ValueError("host is empty")
+
+    explicit_url = "://" in raw_host
+    if not explicit_url:
+        try:
+            host = str(ip_address(raw_host))
+        except ValueError:
+            parsed = urlsplit(f"//{raw_host}")
+            host = parsed.hostname or ""
+        else:
+            parsed = urlsplit("")
+    else:
+        parsed = urlsplit(raw_host)
+        if parsed.scheme.lower() != "http":
+            raise ValueError("only HTTP recorder URLs are supported")
+        host = parsed.hostname or ""
+
+    try:
+        parsed_port = parsed.port
+    except ValueError as err:
+        raise ValueError("invalid port in host") from err
+    if parsed_port is not None and not 1 <= parsed_port <= 65535:
+        raise ValueError("invalid port in host")
+    if (
+        not host
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+        or parsed.path not in {"", "/"}
+    ):
+        raise ValueError("invalid recorder host")
+
+    host = host.rstrip(".")
+    try:
+        ip_address(host)
+    except ValueError:
+        if len(host) > 253 or not all(
+            re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", label)
+            for label in host.split(".")
+        ):
+            raise ValueError("invalid recorder host") from None
+
+    normalized[CONF_HOST] = host.lower()
+    if parsed_port is not None:
+        normalized[CONF_HTTP_PORT] = parsed_port
+    return normalized
+
+
 def _connection_schema(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema(
         {
@@ -101,6 +157,10 @@ class JooanConfigFlow(ConfigFlow, domain=DOMAIN):
         return await client.async_probe()
 
     async def _async_validate(self, data: dict[str, Any]) -> tuple[ProbeResult | None, str | None]:
+        try:
+            data.update(_normalise_connection_data(data))
+        except TypeError, ValueError:
+            return None, "invalid_host"
         try:
             return await self._async_probe(data), None
         except JooanAuthenticationError:

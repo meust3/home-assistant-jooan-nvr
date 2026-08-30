@@ -47,6 +47,7 @@
     },
     "error": {
       "cannot_connect": "Unable to connect to the recorder.",
+      "invalid_host": "Enter a valid host, IP address, or HTTP URL.",
       "invalid_auth": "The local username or password is invalid.",
       "not_jooan_nvr": "The endpoint did not identify as a supported JOOAN recorder.",
       "unknown": "Unexpected error."

@@ -72,6 +72,61 @@ async def test_user_config_flow_shows_detected_channels(hass: HomeAssistant) -> 
 
 
 @pytest.mark.asyncio
+async def test_user_config_flow_normalizes_http_url_and_blank_password(
+    hass: HomeAssistant,
+) -> None:
+    submitted = {**USER_DATA, CONF_HOST: " http://192.168.50.4/ ", CONF_PASSWORD: ""}
+    with (
+        patch(
+            "custom_components.jooan_nvr.config_flow.JooanConfigFlow._async_probe",
+            return_value=PROBE,
+        ) as probe,
+        patch("custom_components.jooan_nvr.async_setup_entry", return_value=True),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], submitted)
+        assert result["step_id"] == "detected"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_HOST] == "192.168.50.4"
+    assert result["data"][CONF_PASSWORD] == ""
+    assert probe.call_args.args[0][CONF_HOST] == "192.168.50.4"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "bad_host",
+    [
+        "http://192.168.50.4/not-a-recorder-path",
+        "https://192.168.50.4/",
+        "http://admin:secret@192.168.50.4/",
+        "not a host",
+    ],
+)
+async def test_user_config_flow_returns_invalid_host_error(
+    hass: HomeAssistant,
+    bad_host: str,
+) -> None:
+    with patch(
+        "custom_components.jooan_nvr.config_flow.JooanConfigFlow._async_probe",
+        return_value=PROBE,
+    ) as probe:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {**USER_DATA, CONF_HOST: bad_host}
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "invalid_host"}
+    probe.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_duplicate_config_flow_is_rejected(hass: HomeAssistant) -> None:
     MockConfigEntry(domain=DOMAIN, unique_id=DEVICE_ID, data=USER_DATA).add_to_hass(hass)
     with patch(
