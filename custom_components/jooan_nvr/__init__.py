@@ -43,6 +43,7 @@ class JooanRuntimeData:
     client: JooanClient
     coordinator: JooanCoordinator
     identity: NvrIdentity
+    nvr_device_id: str  # Home Assistant Device Registry entry ID
     channels: tuple[Channel, ...]
     bridges: StreamBridgeManager
 
@@ -78,7 +79,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: JooanConfigEntry) -> boo
     connections: set[tuple[str, str]] = set()
     if mac := entry.data.get(CONF_MAC):
         connections.add((dr.CONNECTION_NETWORK_MAC, mac))
-    registry.async_get_or_create(
+    nvr_device = registry.async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, identity.device_id)},
         connections=connections,
@@ -107,6 +108,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: JooanConfigEntry) -> boo
         client=client,
         coordinator=coordinator,
         identity=identity,
+        nvr_device_id=nvr_device.id,
         channels=channels,
         bridges=StreamBridgeManager(bridge_factory, stream_id),
     )

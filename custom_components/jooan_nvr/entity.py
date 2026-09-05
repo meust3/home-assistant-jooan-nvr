@@ -30,7 +30,7 @@ class JooanChannelEntity(CoordinatorEntity):
             manufacturer=MANUFACTURER,
             model=channel.model,
             sw_version=channel.firmware,
-            via_device=(DOMAIN, runtime.identity.device_id),
+            via_device_id=runtime.nvr_device_id,
         )
 
     @property

@@ -40,6 +40,7 @@ async def test_diagnostics_redact_credentials_and_identifiers(hass: HomeAssistan
         client=MagicMock(),
         coordinator=coordinator,
         identity=NvrIdentity(secret_id, "Test NVR", "JA-8108-W", "3.0.6.0", 1),
+        nvr_device_id="test-ha-parent-device-id",
         channels=(
             Channel(
                 1,

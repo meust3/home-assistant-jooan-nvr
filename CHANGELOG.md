@@ -3,6 +3,17 @@
 All notable changes use [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.2]
+
+### Fixed
+
+- Restore camera and channel entity registration on Home Assistant 2026.9 by
+  replacing the deprecated `via_device` relationship with `via_device_id`.
+- Preserve all existing channel and camera unique IDs so renamed entities, dashboard
+  cards, and automations reattach without migration.
+- Add Home Assistant 2026.9 config-entry and device-hierarchy regression coverage
+  while retaining Home Assistant 2026.8 validation.
+
 ## [0.1.1]
 
 ### Fixed
@@ -47,5 +58,6 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - H.265 playback depends on the client; the integration does not transcode.
 - The NVR remains responsible for its wireless cameras, HDD, and recording.
 
+[0.1.2]: https://github.com/meust3/home-assistant-jooan-nvr/releases/tag/v0.1.2
 [0.1.1]: https://github.com/meust3/home-assistant-jooan-nvr/releases/tag/v0.1.1
 [0.1.0]: https://github.com/meust3/home-assistant-jooan-nvr/releases/tag/v0.1.0

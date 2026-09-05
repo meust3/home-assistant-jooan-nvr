@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jooan-nvr-discovery"
-version = "0.1.1"
+version = "0.1.2"
 description = "Conservative local-network discovery and protocol investigation for JOOAN/EseeCloud NVRs"
 readme = "README.md"
 requires-python = ">=3.14.2"
@@ -20,7 +20,7 @@ dependencies = [
 dev = [
   "pytest>=8",
   "pytest-asyncio>=0.24",
-  "pytest-homeassistant-custom-component==0.13.357",
+  "pytest-homeassistant-custom-component==0.13.363",
   "aiodhcpwatcher==1.2.7",
   "aiodiscover==3.3.2",
   "av==17.0.1",

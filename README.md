@@ -95,7 +95,7 @@ Changing quality reloads the config entry without creating duplicate entities.
 ## Devices and entities
 
 Home Assistant creates one parent NVR device and one child device per configured
-channel, linked through `via_device`. Each of the eight channels can be created even
+channel, linked through `via_device_id`. Each of the eight channels can be created even
 when it is offline. Each channel has:
 
 - a camera entity;
@@ -165,7 +165,8 @@ More detail is in [Troubleshooting](docs/TROUBLESHOOTING.md).
 
 ## Development
 
-Home Assistant 2026.8 uses Python 3.14; this project targets Python 3.14.2 or newer.
+Home Assistant 2026.8 and 2026.9 use Python 3.14; this project targets Python
+3.14.2 or newer.
 All automated protocol tests use mocks or synthetic media and never contact a real
 NVR.
 
@@ -177,7 +178,7 @@ python -m ruff format --check .
 python -m compileall -q custom_components jooan_discovery tests scripts
 python scripts/validate_isolation.py
 python scripts/validate_hacs.py
-python scripts/build_release.py --version 0.1.1
+python scripts/build_release.py --version 0.1.2
 ```
 
 The isolation check copies only `custom_components/jooan_nvr`, starts Python in

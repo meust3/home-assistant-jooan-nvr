@@ -22,8 +22,10 @@ jobs:
         include:
           - homeassistant: "2026.8.0 (minimum)"
             plugin: "0.13.354"
-          - homeassistant: "2026.8.3 (current stable)"
+          - homeassistant: "2026.8.3 (previous stable)"
             plugin: "0.13.357"
+          - homeassistant: "2026.9.0 (current stable)"
+            plugin: "0.13.363"
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -86,4 +88,4 @@ jobs:
       - name: Validate HACS layout
         run: python scripts/validate_hacs.py
       - name: Build manual-install archive
-        run: python scripts/build_release.py --version 0.1.1
+        run: python scripts/build_release.py --version 0.1.2
