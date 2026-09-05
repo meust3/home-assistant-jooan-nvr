@@ -25,7 +25,7 @@ dev = [
   "aiodiscover==3.3.2",
   "av==17.0.1",
   "cached-ipaddress==1.1.2",
-  "PyTurboJPEG==1.8.3",
+  "PyTurboJPEG==2.5.0",
   "ruff>=0.9",
 ]
 
