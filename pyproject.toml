@@ -23,7 +23,7 @@ dev = [
   "pytest-homeassistant-custom-component==0.13.363",
   "aiodhcpwatcher==1.2.7",
   "aiodiscover==3.3.2",
-  "av==17.0.1",
+  "av==18.1.0",
   "cached-ipaddress==1.1.2",
   "PyTurboJPEG==1.8.3",
   "ruff>=0.9",
